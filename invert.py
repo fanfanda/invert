@@ -71,10 +71,10 @@ def get_pytorch_module(net, blob):
         return curr_m
 
 
-def invert(image, network='alexnet', size=227, layer='features.4', alpha=6, beta=2, 
-        alpha_lambda=1e-5,  tv_lambda=1e-5, epochs=200, learning_rate=1e2, 
-        momentum=0.9, decay_iter=100, decay_factor=1e-1, print_iter=25, 
-        cuda=False):
+def invert(image, network = 'alexnet', size = 227, layer = 'features.4', alpha = 6, beta = 2, 
+        alpha_lambda = 1e-5,  tv_lambda = 1e-5, epochs = 200, learning_rate = 1e2, 
+        momentum = 0.9, decay_iter = 100, decay_factor = 1e-1, print_iter = 25, 
+        cuda = False):
 
     mu = [0.485, 0.456, 0.406]
     sigma = [0.229, 0.224, 0.225]
@@ -98,7 +98,7 @@ def invert(image, network='alexnet', size=227, layer='features.4', alpha=6, beta
         model.cuda()
 
     img_ = transform(Image.open(image)).unsqueeze(0)
-    print img_.size()
+    print(img_.size())
 
     activations = []
 
@@ -112,18 +112,18 @@ def invert(image, network='alexnet', size=227, layer='features.4', alpha=6, beta
         return activations[0]
 
     _ = get_pytorch_module(model, layer).register_forward_hook(hook_acts)
-    input_var = Variable(img_.cuda() if cuda else img_)
-    ref_acts = get_acts(model, input_var).detach()
+    input_var = Variable(img_.cuda() if cuda else img_) # 原始图像 x
+    ref_acts = get_acts(model, input_var).detach() # f(x)
 
     x_ = Variable((1e-3 * torch.randn(*img_.size()).cuda() if cuda else 
-        1e-3 * torch.randn(*img_.size())), requires_grad=True)
+        1e-3 * torch.randn(*img_.size())), requires_grad = True) # 待求解的目标
 
 
-    alpha_f = lambda x: alpha_prior(x, alpha=alpha)
-    tv_f = lambda x: tv_norm(x, beta=beta)
+    alpha_f = lambda x: alpha_prior(x, alpha = alpha)
+    tv_f = lambda x: tv_norm(x, beta = beta)
     loss_f = lambda x: norm_loss(x, ref_acts)
 
-    optimizer = torch.optim.SGD([x_], lr=learning_rate, momentum=momentum)
+    optimizer = torch.optim.SGD([x_], lr = learning_rate, momentum = momentum)
 
     for i in range(epochs):
         acts = get_acts(model, x_)
@@ -132,7 +132,7 @@ def invert(image, network='alexnet', size=227, layer='features.4', alpha=6, beta
         tv_term = tv_f(x_)
         loss_term = loss_f(acts)
 
-        tot_loss = alpha_lambda*alpha_term + tv_lambda*tv_term + loss_term
+        tot_loss = alpha_lambda * alpha_term + tv_lambda * tv_term + loss_term
 
         if (i+1) % print_iter == 0:
             print('Epoch %d:\tAlpha: %f\tTV: %f\tLoss: %f\tTot Loss: %f' % (i+1,
